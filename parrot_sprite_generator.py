@@ -1,187 +1,158 @@
 """
-Parrot sprite generator.
-Generates dedicated, high-detail pixel-art animations for the pirate's pet parrot companion.
+High-Definition Smooth Cartoon Sprite Generator for the Pirate's Pet Parrot.
+Renders smooth anti-aliased 256x256 frames (via 512x512 Lanczos supersampling):
+- Vibrant scarlet macaw with golden wing bars and royal blue flight feathers
+- Expressive eye with white cheek patch and curved pirate beak
+- Flowing tail feathers and cute claws
+- Fluid flapping and perching cycles
 """
 
 import os
 from PIL import Image, ImageDraw
 
+OUTPUT_SIZE = 256
+RENDER_SIZE = 512
+
 C_TRANSPARENT = (0, 0, 0, 0)
-C_BLACK       = (20, 20, 20, 255)
-C_WHITE       = (250, 250, 250, 255)
-C_RED         = (230, 35, 35, 255)
-C_RED_DARK    = (175, 25, 25, 255)
-C_GREEN       = (40, 190, 60, 255)
-C_GREEN_DARK  = (25, 135, 40, 255)
-C_BLUE        = (45, 120, 225, 255)
-C_YELLOW      = (255, 215, 25, 255)
-C_ORANGE      = (245, 140, 20, 255)
-C_FEET        = (160, 130, 90, 255)
-
-SIZE = 36  # Base frame 36x36 pixels
+C_BLACK       = (20, 20, 25, 255)
+C_WHITE       = (255, 255, 255, 255)
+C_RED         = (235, 38, 42, 255)
+C_RED_DARK    = (175, 24, 28, 255)
+C_YELLOW      = (255, 215, 30, 255)
+C_BLUE        = (42, 115, 225, 255)
+C_BLUE_DARK   = (26, 75, 155, 255)
+C_BEAK        = (248, 242, 225, 255)
+C_BEAK_TIP    = (75, 75, 80, 255)
+C_FEET        = (170, 140, 100, 255)
 
 
-def blank():
-    return Image.new("RGBA", (SIZE, SIZE), C_TRANSPARENT)
+def create_canvas():
+    return Image.new("RGBA", (RENDER_SIZE, RENDER_SIZE), C_TRANSPARENT)
 
 
-def draw_perch_frames():
+def finalize_frame(im: Image.Image) -> Image.Image:
+    return im.resize((OUTPUT_SIZE, OUTPUT_SIZE), Image.Resampling.LANCZOS)
+
+
+def draw_parrot(d: ImageDraw.ImageDraw, cx=256, cy=240,
+                wing_state="folded", bob=0, flap_y=0, beak_open=False):
+    px = cx
+    py = cy + bob
+
+    # 1. Long Tropical Tail Feathers
+    d.polygon([(px - 15, py + 30), (px - 50, py + 160), (px - 35, py + 160), (px - 5, py + 35)], fill=C_BLUE)
+    d.polygon([(px - 8, py + 30), (px - 38, py + 180), (px - 22, py + 180), (px + 2, py + 35)], fill=C_RED)
+    d.polygon([(px, py + 30), (px - 20, py + 145), (px - 10, py + 145), (px + 8, py + 35)], fill=C_YELLOW)
+
+    # 2. Feet / Claws
+    d.rounded_rectangle([px - 20, py + 52, px - 6, py + 68], radius=4, fill=C_FEET)
+    d.rounded_rectangle([px + 2, py + 52, px + 16, py + 68], radius=4, fill=C_FEET)
+
+    # 3. Body (Plump round scarlet chest)
+    d.ellipse([px - 45, py - 35, px + 40, py + 55], fill=C_RED)
+    d.arc([px - 45, py - 35, px + 40, py + 55], start=45, end=135, fill=C_RED_DARK, width=6)
+
+    # 4. Wings
+    if wing_state == "folded":
+        # Folded wing (blue + yellow bar)
+        d.polygon([(px - 20, py - 20), (px + 15, py - 10), (px - 15, py + 45), (px - 42, py + 15)], fill=C_BLUE)
+        d.polygon([(px - 18, py - 18), (px + 10, py - 8), (px - 5, py + 15), (px - 30, py + 5)], fill=C_YELLOW)
+        d.arc([(px - 20, py - 20), (px - 15, py + 45)], start=0, end=180, fill=C_BLUE_DARK, width=3)
+    elif wing_state == "up":
+        # Wings flapped high up
+        d.polygon([(px - 15, py - 20), (px - 110, py - 120 + flap_y), (px - 50, py - 30), (px - 10, py + 10)], fill=C_BLUE)
+        d.polygon([(px - 15, py - 20), (px - 90, py - 100 + flap_y), (px - 45, py - 25), (px - 10, py + 5)], fill=C_YELLOW)
+
+        d.polygon([(px + 15, py - 20), (px + 110, py - 120 + flap_y), (px + 50, py - 30), (px + 10, py + 10)], fill=C_BLUE)
+        d.polygon([(px + 15, py - 20), (px + 90, py - 100 + flap_y), (px + 45, py - 25), (px + 10, py + 5)], fill=C_YELLOW)
+    elif wing_state == "down":
+        # Wings flapped downward
+        d.polygon([(px - 15, py - 10), (px - 120, py + 45 + flap_y), (px - 60, py + 30), (px - 10, py + 20)], fill=C_BLUE)
+        d.polygon([(px - 15, py - 10), (px - 95, py + 30 + flap_y), (px - 50, py + 20), (px - 10, py + 15)], fill=C_YELLOW)
+
+        d.polygon([(px + 15, py - 10), (px + 120, py + 45 + flap_y), (px + 60, py + 30), (px + 10, py + 20)], fill=C_BLUE)
+        d.polygon([(px + 15, py - 10), (px + 95, py + 30 + flap_y), (px + 50, py + 20), (px + 10, py + 15)], fill=C_YELLOW)
+
+    # 5. Head & Crest
+    d.ellipse([px - 30, py - 85, px + 35, py - 20], fill=C_RED)
+    # Tropical crest feather on top
+    d.polygon([(px - 15, py - 80), (px - 10, py - 125), (px + 10, py - 85)], fill=C_YELLOW)
+    d.polygon([(px + 2, py - 82), (px + 8, py - 118), (px + 22, py - 82)], fill=C_RED)
+
+    # White cheek patch
+    d.ellipse([px + 2, py - 65, px + 30, py - 35], fill=C_WHITE)
+
+    # Eye
+    d.ellipse([px + 10, py - 58, px + 24, py - 44], fill=C_BLACK)
+    d.ellipse([px + 13, py - 56, px + 18, py - 51], fill=C_WHITE) # catchlight
+
+    # Curved Ivory Beak
+    if beak_open:
+        d.polygon([(px + 25, py - 60), (px + 58, py - 45), (px + 45, py - 35), (px + 25, py - 40)], fill=C_BEAK)
+        d.polygon([(px + 25, py - 35), (px + 48, py - 25), (px + 40, py - 18), (px + 25, py - 25)], fill=C_BEAK_TIP)
+    else:
+        d.polygon([(px + 25, py - 60), (px + 62, py - 42), (px + 50, py - 22), (px + 25, py - 35)], fill=C_BEAK)
+        d.point([(px + 52, py - 24)], fill=C_BEAK_TIP) # Hook tip
+
+
+def gen_perched():
     frames = []
-    # 4 frames: bobbing, looking around
-    bobs = [0, -1, 0, 1]
+    bobs = [0, -3, 0, 3]
     for i, bob in enumerate(bobs):
-        im = blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 18, 18 + bob
-
-        # Feet gripping branch/shoulder
-        d.line([(cx - 3, cy + 8), (cx - 1, cy + 9)], fill=C_FEET, width=2)
-        d.line([(cx + 1, cy + 8), (cx + 3, cy + 9)], fill=C_FEET, width=2)
-
-        # Long tropical tail feathers (Red, Blue, Yellow)
-        d.line([(cx - 2, cy + 7), (cx - 5, cy + 15)], fill=C_BLUE, width=2)
-        d.line([(cx, cy + 7), (cx - 2, cy + 17)], fill=C_RED, width=2)
-        d.line([(cx + 2, cy + 7), (cx + 1, cy + 14)], fill=C_YELLOW, width=1)
-
-        # Body (vibrant green + red chest)
-        d.rectangle([cx - 4, cy, cx + 4, cy + 7], fill=C_GREEN)
-        d.rectangle([cx - 2, cy + 1, cx + 2, cy + 6], fill=C_RED)
-
-        # Folded wing (blue & yellow edge)
-        d.polygon([(cx - 3, cy + 1), (cx - 6, cy + 4), (cx - 4, cy + 8)], fill=C_BLUE)
-        d.point([(cx - 5, cy + 5), (cx - 4, cy + 6)], fill=C_YELLOW)
-
-        # Head (red with green crest)
-        d.rectangle([cx - 3, cy - 6, cx + 3, cy], fill=C_RED)
-        # Green head crest feather
-        d.polygon([(cx - 1, cy - 6), (cx - 2, cy - 10), (cx + 1, cy - 6)], fill=C_GREEN)
-
-        # Eye
-        d.rectangle([cx + 1, cy - 5, cx + 3, cy - 3], fill=C_WHITE)
-        d.point([(cx + 2, cy - 4)], fill=C_BLACK)
-
-        # Curved pirate parrot beak (yellow with hooked tip)
-        d.polygon([(cx + 3, cy - 4), (cx + 7, cy - 3), (cx + 6, cy - 1), (cx + 3, cy - 2)], fill=C_YELLOW)
-        d.point([(cx + 6, cy)], fill=C_ORANGE)  # Hook tip
-
-        frames.append(im)
+        draw_parrot(d, cx=256, cy=240, wing_state="folded", bob=bob, beak_open=(i == 1))
+        frames.append(finalize_frame(im))
     return frames
 
 
-def draw_fly_frames():
+def gen_flying():
     frames = []
-    # 4 frames: wings up, forward, down, glide
-    wing_states = ["up", "mid", "down", "glide"]
-    for i, state in enumerate(wing_states):
-        im = blank()
+    flaps = [("up", -10), ("up", 10), ("down", -10), ("down", 10)]
+    for state, fy in flaps:
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 18, 18
-
-        # Tail streaming behind in flight
-        d.line([(cx - 5, cy + 2), (cx - 14, cy + 4)], fill=C_RED, width=2)
-        d.line([(cx - 4, cy + 3), (cx - 12, cy + 7)], fill=C_BLUE, width=2)
-        d.line([(cx - 4, cy + 1), (cx - 13, cy + 2)], fill=C_YELLOW, width=1)
-
-        # Body horizontal/streamlined
-        d.rectangle([cx - 5, cy - 2, cx + 4, cy + 3], fill=C_GREEN)
-        d.rectangle([cx - 2, cy - 1, cx + 3, cy + 2], fill=C_RED)
-
-        # Tucked feet
-        d.point([(cx - 2, cy + 4), (cx, cy + 4)], fill=C_FEET)
-
-        # Head thrust forward
-        d.rectangle([cx + 3, cy - 4, cx + 8, cy + 1], fill=C_RED)
-        d.polygon([(cx + 5, cy - 4), (cx + 4, cy - 7), (cx + 7, cy - 4)], fill=C_GREEN)
-        d.point([(cx + 6, cy - 3)], fill=C_WHITE)
-        d.point([(cx + 7, cy - 3)], fill=C_BLACK)
-        # Beak forward
-        d.polygon([(cx + 8, cy - 3), (cx + 12, cy - 2), (cx + 10, cy), (cx + 8, cy - 1)], fill=C_YELLOW)
-
-        # Wings flapping!
-        if state == "up":
-            # Wings raised high
-            d.polygon([(cx - 2, cy - 2), (cx + 1, cy - 12), (cx + 6, cy - 2)], fill=C_BLUE)
-            d.polygon([(cx - 1, cy - 2), (cx + 2, cy - 10), (cx + 5, cy - 2)], fill=C_YELLOW)
-            d.polygon([(cx, cy - 2), (cx + 3, cy - 8), (cx + 4, cy - 2)], fill=C_RED)
-        elif state == "mid":
-            # Wings outstretched
-            d.polygon([(cx - 4, cy - 2), (cx + 2, cy - 7), (cx + 7, cy - 1)], fill=C_BLUE)
-            d.polygon([(cx - 3, cy - 1), (cx + 2, cy - 5), (cx + 6, cy)], fill=C_YELLOW)
-        elif state == "down":
-            # Wings pushed down
-            d.polygon([(cx - 2, cy + 1), (cx + 2, cy + 10), (cx + 6, cy + 1)], fill=C_BLUE)
-            d.polygon([(cx - 1, cy + 1), (cx + 2, cy + 8), (cx + 5, cy + 1)], fill=C_YELLOW)
-        elif state == "glide":
-            # Flat banking glide
-            d.polygon([(cx - 5, cy - 1), (cx + 1, cy - 4), (cx + 6, cy - 1)], fill=C_BLUE)
-            d.line([(cx - 4, cy - 1), (cx + 5, cy - 1)], fill=C_YELLOW, width=1)
-
-        frames.append(im)
+        draw_parrot(d, cx=256, cy=240, wing_state=state, flap_y=fy)
+        frames.append(finalize_frame(im))
     return frames
 
 
-def draw_squawk_frames():
+def gen_taking_off():
     frames = []
-    for i in range(2):
-        im = blank()
-        d = ImageDraw.Draw(im)
-        cx, cy = 18, 17 + (0 if i == 0 else -1)
+    im0 = create_canvas()
+    d0 = ImageDraw.Draw(im0)
+    draw_parrot(d0, cx=256, cy=245, wing_state="folded", bob=4)
+    frames.append(finalize_frame(im0))
 
-        d.line([(cx - 3, cy + 8), (cx - 1, cy + 9)], fill=C_FEET, width=2)
-        d.line([(cx + 1, cy + 8), (cx + 3, cy + 9)], fill=C_FEET, width=2)
-        d.line([(cx - 2, cy + 7), (cx - 5, cy + 15)], fill=C_BLUE, width=2)
-        d.line([(cx, cy + 7), (cx - 2, cy + 17)], fill=C_RED, width=2)
-
-        d.rectangle([cx - 4, cy, cx + 4, cy + 7], fill=C_GREEN)
-        d.rectangle([cx - 2, cy + 1, cx + 2, cy + 6], fill=C_RED)
-
-        # Flapped wing
-        d.polygon([(cx - 3, cy + 1), (cx - 8, cy - 2), (cx - 4, cy + 7)], fill=C_BLUE)
-        d.point([(cx - 6, cy + 1)], fill=C_YELLOW)
-
-        # Head tilted up squawking
-        d.rectangle([cx - 3, cy - 6, cx + 3, cy], fill=C_RED)
-        d.polygon([(cx - 1, cy - 6), (cx - 3, cy - 11), (cx + 1, cy - 6)], fill=C_GREEN)
-
-        d.rectangle([cx + 1, cy - 5, cx + 3, cy - 3], fill=C_WHITE)
-        d.point([(cx + 2, cy - 4)], fill=C_BLACK)
-
-        # WIDE OPEN BEAK
-        d.polygon([(cx + 3, cy - 5), (cx + 8, cy - 6), (cx + 4, cy - 3)], fill=C_YELLOW)
-        d.polygon([(cx + 3, cy - 2), (cx + 7, cy), (cx + 4, cy + 1)], fill=C_YELLOW)
-        d.point([(cx + 3, cy - 3), (cx + 4, cy - 3)], fill=C_BLACK)  # Inside mouth
-
-        # Sound notes / squawk wave marks!
-        if i == 1:
-            d.point([(cx + 9, cy - 6), (cx + 11, cy - 8)], fill=C_YELLOW)
-            d.point([(cx + 10, cy - 2)], fill=C_ORANGE)
-
-        frames.append(im)
+    im1 = create_canvas()
+    d1 = ImageDraw.Draw(im1)
+    draw_parrot(d1, cx=256, cy=235, wing_state="up", flap_y=-15)
+    frames.append(finalize_frame(im1))
     return frames
 
 
 def generate_parrot_sprites(output_dir="assets/sprites/parrot"):
     os.makedirs(output_dir, exist_ok=True)
-    sets = {
-        "perch": draw_perch_frames(),
-        "fly": draw_fly_frames(),
-        "squawk": draw_squawk_frames(),
+    animations = {
+        "perched": gen_perched(),
+        "flying": gen_flying(),
+        "taking_off": gen_taking_off(),
+        "icon": gen_perched(),
+        "returning": gen_flying(),
+        "dragged": gen_flying(),
     }
 
-    for name, frames in sets.items():
-        for idx, fr in enumerate(frames):
-            # Facing right
-            p_r = os.path.join(output_dir, f"{name}_right_{idx}.png")
-            fr.save(p_r)
+    for anim_name, frames in animations.items():
+        for idx, frame in enumerate(frames):
+            p_r = os.path.join(output_dir, f"{anim_name}_right_{idx}.png")
+            frame.save(p_r)
 
-            # Facing left
-            fr_l = fr.transpose(Image.FLIP_LEFT_RIGHT)
-            p_l = os.path.join(output_dir, f"{name}_left_{idx}.png")
-            fr_l.save(p_l)
+            frame_l = frame.transpose(Image.FLIP_LEFT_RIGHT)
+            p_l = os.path.join(output_dir, f"{anim_name}_left_{idx}.png")
+            frame_l.save(p_l)
 
-    print(f"Parrot sprites generated successfully in {output_dir}!")
+    print(f"HD Parrot sprites generated successfully in {output_dir}!")
 
 
 if __name__ == "__main__":
     generate_parrot_sprites()
-

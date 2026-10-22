@@ -1,407 +1,444 @@
 """
-Girl sprite generator based on the reference photo:
-- Blonde straight hair falling over shoulders with center part
-- Light gray cropped t-shirt (crop top) exposing midriff
-- Red bracelet on left wrist
-- Fitted blue skinny denim jeans
-- Clean white sneakers
-- Cute expressive face
+High-Definition Smooth Cartoon Sprite Generator for the Girl (Reference Photo).
+Renders smooth anti-aliased 256x256 frames (via 512x512 Lanczos supersampling):
+- Silky blonde straight hair parted in center, draping over shoulders
+- Expressive face with detailed eyes, eyelashes, and cute expressions
+- Heather gray cropped t-shirt exposing midriff and navel
+- Red string bracelet on left wrist
+- Fitted dark indigo skinny jeans with stonewash highlights & rolled cuffs
+- Crisp white sneakers
 """
 
 import os
+import math
 from PIL import Image, ImageDraw
 
-# Color Palette
+OUTPUT_SIZE = 256
+RENDER_SIZE = 512
+SCALE = RENDER_SIZE / OUTPUT_SIZE  # 2.0
+
+# HD Color Palette
 C_TRANSPARENT    = (0, 0, 0, 0)
-C_BLACK          = (25, 22, 28, 255)
+C_BLACK          = (24, 22, 28, 255)
 C_WHITE          = (255, 255, 255, 255)
-C_SKIN           = (253, 226, 206, 255)
-C_SKIN_SHADOW    = (232, 192, 168, 255)
-C_BLUSH          = (248, 142, 155, 255)
 
-# Hair (Blonde / Ash Honey Blonde from photo)
-C_HAIR           = (212, 182, 138, 255)       # Main blonde
-C_HAIR_LIGHT     = (238, 218, 180, 255)       # Highlight
-C_HAIR_DARK      = (175, 142, 102, 255)       # Depth / shadow
-C_HAIR_ROOT      = (148, 115, 80, 255)        # Center part
+# Skin
+C_SKIN           = (254, 228, 210, 255)
+C_SKIN_SHADOW    = (234, 194, 170, 255)
+C_SKIN_DEEP      = (214, 170, 144, 255)
+C_BLUSH          = (255, 148, 160, 180)
+C_LIP_PINK       = (232, 105, 120, 255)
+C_LIP_DARK       = (185, 60, 78, 255)
 
-# Clothing
-# Crop Top: Light heather gray / silver
-C_TOP            = (218, 221, 226, 255)
-C_TOP_LIGHT      = (240, 242, 245, 255)
-C_TOP_SHADOW     = (175, 180, 188, 255)
+# Hair (Blonde from photo)
+C_HAIR_BASE      = (206, 174, 128, 255)
+C_HAIR_LIGHT     = (242, 222, 184, 255)
+C_HAIR_DARK      = (164, 130, 88, 255)
+C_HAIR_ROOT      = (135, 102, 65, 255)
 
-# Jeans: Classic deep indigo denim
-C_JEANS          = (42, 78, 132, 255)
-C_JEANS_LIGHT    = (68, 112, 175, 255)        # Thigh fading / highlight
-C_JEANS_DARK     = (28, 52, 92, 255)          # Creases / side seams
-C_JEANS_WAIST    = (190, 165, 110, 255)       # Button / rivet brass
+# Crop Top
+C_TOP            = (218, 222, 228, 255)
+C_TOP_LIGHT      = (242, 245, 248, 255)
+C_TOP_SHADOW     = (176, 182, 192, 255)
 
-# Shoes: White sneakers
+# Jeans
+C_JEANS          = (44, 76, 126, 255)
+C_JEANS_LIGHT    = (70, 114, 174, 255)
+C_JEANS_DARK     = (26, 48, 84, 255)
+C_JEANS_CUFF     = (135, 168, 210, 255)
+C_JEANS_BUTTON   = (212, 186, 118, 255)
+
+# White Sneakers
 C_SNEAKER        = (252, 252, 252, 255)
-C_SNEAKER_SOLE   = (215, 218, 222, 255)
-C_SNEAKER_SHADOW = (180, 184, 190, 255)
+C_SNEAKER_SOLE   = (216, 220, 226, 255)
+C_SNEAKER_DARK   = (180, 186, 194, 255)
 
-# Details
-C_RED_BRACELET   = (225, 45, 52, 255)         # Red wrist bracelet from photo
-C_NAVEL          = (220, 175, 150, 255)       # Cute belly button
-C_EYE_HAZEL      = (95, 68, 48, 255)          # Expressive eyes
+# Accessories & Details
+C_RED_BRACELET   = (230, 40, 48, 255)
+C_NAVEL          = (220, 174, 148, 255)
+C_EYE_HAZEL      = (108, 76, 50, 255)
 C_HEART          = (255, 75, 120, 255)
-C_HEART_LIGHT    = (255, 145, 180, 255)
-
-FRAME_SIZE = 64
+C_HEART_LIGHT    = (255, 150, 185, 255)
 
 
-def create_blank():
-    return Image.new("RGBA", (FRAME_SIZE, FRAME_SIZE), C_TRANSPARENT)
+def create_canvas():
+    return Image.new("RGBA", (RENDER_SIZE, RENDER_SIZE), C_TRANSPARENT)
 
 
-def draw_heart(d: ImageDraw.ImageDraw, hx, hy, size=5):
-    """Draw a cute pixel heart"""
-    if size <= 5:
-        d.polygon([
-            (hx, hy + 2), (hx - 3, hy - 1), (hx - 2, hy - 3),
-            (hx, hy - 1),
-            (hx + 2, hy - 3), (hx + 3, hy - 1)
-        ], fill=C_HEART)
-        d.point([(hx - 1, hy - 2)], fill=C_HEART_LIGHT)
-    else:
-        d.polygon([
-            (hx, hy + 4), (hx - 4, hy), (hx - 3, hy - 4),
-            (hx, hy - 1),
-            (hx + 3, hy - 4), (hx + 4, hy)
-        ], fill=C_HEART)
-        d.point([(hx - 2, hy - 2), (hx - 1, hy - 3)], fill=C_HEART_LIGHT)
+def draw_smooth_heart(d: ImageDraw.ImageDraw, hx, hy, size=16):
+    """Draw smooth anti-aliased romantic heart"""
+    s = size
+    # Two top circles
+    d.ellipse([hx - s, hy - s, hx, hy], fill=C_HEART)
+    d.ellipse([hx, hy - s, hx + s, hy], fill=C_HEART)
+    # Bottom triangle
+    d.polygon([(hx - s, hy - s // 2), (hx + s, hy - s // 2), (hx, hy + s)], fill=C_HEART)
+    # Highlight shine
+    d.ellipse([hx - s // 2, hy - s * 0.7, hx - s // 4, hy - s * 0.3], fill=C_HEART_LIGHT)
 
 
-def draw_girl_head(d: ImageDraw.ImageDraw, hx, hy, blink=False, blush=False, mouth="smile", hair_blow=0):
+def draw_girl(d: ImageDraw.ImageDraw, cx=256, cy=240,
+              leg_l_off=(0, 0), leg_r_off=(0, 0),
+              arm_pose="down", blink=False, blush=False,
+              mouth="smile", hair_blow=0, lean_x=0):
     """
-    Draw face and blonde hair matching the photo:
-    - Long blonde straight hair falling over shoulders
-    - Center parting
-    - Expressive face: delicate eyes, cute mouth ('smile', 'kiss', 'open' / surprised 'o')
+    Renders high-definition girl character at (cx, cy) on 512x512 canvas.
     """
-    # 1. Back hair volume
-    d.rectangle([hx - 7, hy - 6, hx + 7, hy + 8], fill=C_HAIR)
+    hx = cx + lean_x
+    hy = cy - 110
+
+    # =========================================================================
+    # 1. BACKGROUND HAIR
+    # =========================================================================
+    # Back hair volume falling past shoulders
+    hb = hair_blow * 3
+    d.rounded_rectangle([hx - 58, hy - 52, hx + 58, hy + 130], radius=38, fill=C_HAIR_BASE)
     d.polygon([
-        (hx - 7, hy + 5),
-        (hx - 8 + hair_blow, hy + 17),
-        (hx - 5 + hair_blow, hy + 19),
-        (hx - 4, hy + 8)
-    ], fill=C_HAIR)
+        (hx - 58, hy + 30),
+        (hx - 65 + hb, hy + 175),
+        (hx - 26 + hb, hy + 185),
+        (hx - 22, hy + 80)
+    ], fill=C_HAIR_BASE)
     d.polygon([
-        (hx + 4, hy + 8),
-        (hx + 5 - hair_blow, hy + 19),
-        (hx + 8 - hair_blow, hy + 17),
-        (hx + 7, hy + 5)
-    ], fill=C_HAIR)
+        (hx + 58, hy + 30),
+        (hx + 65 - hb, hy + 175),
+        (hx + 26 - hb, hy + 185),
+        (hx + 22, hy + 80)
+    ], fill=C_HAIR_BASE)
 
-    # Hair shading/depth
-    d.line([(hx - 8 + hair_blow, hy + 10), (hx - 8 + hair_blow, hy + 17)], fill=C_HAIR_DARK)
-    d.line([(hx + 8 - hair_blow, hy + 10), (hx + 8 - hair_blow, hy + 17)], fill=C_HAIR_DARK)
+    # Hair shading/highlights
+    d.line([(hx - 55 + hb, hy + 60), (hx - 50 + hb, hy + 170)], fill=C_HAIR_DARK, width=4)
+    d.line([(hx + 55 - hb, hy + 60), (hx + 50 - hb, hy + 170)], fill=C_HAIR_DARK, width=4)
 
-    # 2. Face skin base
-    d.rectangle([hx - 5, hy - 2, hx + 5, hy + 6], fill=C_SKIN)
-    d.line([(hx - 3, hy + 7), (hx + 3, hy + 7)], fill=C_SKIN) # Chin
-    d.line([(hx - 1, hy + 8), (hx + 1, hy + 8)], fill=C_SKIN_SHADOW) # Jaw tip
+    # =========================================================================
+    # 2. LEGS & JEANS & SNEAKERS
+    # =========================================================================
+    jy = cy + 22
+    # Waistband of jeans
+    d.rounded_rectangle([cx - 40, jy, cx + 40, jy + 24], radius=6, fill=C_JEANS)
+    d.ellipse([cx - 4, jy + 7, cx + 4, jy + 15], fill=C_JEANS_BUTTON)
 
-    # 3. Top of head / Hair roots & center parting
-    d.rectangle([hx - 6, hy - 7, hx + 6, hy - 3], fill=C_HAIR)
-    d.line([(hx - 5, hy - 7), (hx + 5, hy - 7)], fill=C_HAIR_LIGHT)
-    d.point([(hx, hy - 7), (hx, hy - 6), (hx, hy - 5)], fill=C_HAIR_ROOT) # Center part
+    # Left Leg (viewer's left)
+    lx = cx - 22 + leg_l_off[0] * 3
+    ly = jy + 18 + leg_l_off[1] * 3
+    d.polygon([
+        (lx - 16, ly), (lx - 12, ly + 145),
+        (lx + 10, ly + 145), (lx + 14, ly)
+    ], fill=C_JEANS)
+    # Thigh wash highlight
+    d.rounded_rectangle([lx - 9, ly + 15, lx + 5, ly + 105], radius=6, fill=C_JEANS_LIGHT)
+    # Side seam
+    d.line([(lx - 15, ly), (lx - 12, ly + 145)], fill=C_JEANS_DARK, width=2)
+    # Rolled denim cuff
+    d.rounded_rectangle([lx - 13, ly + 142, lx + 11, ly + 152], radius=4, fill=C_JEANS_CUFF)
+    # Ankle skin peek
+    d.rectangle([lx - 8, ly + 152, lx + 6, ly + 158], fill=C_SKIN)
+    # White Sneaker
+    d.rounded_rectangle([lx - 16, ly + 156, lx + 12, ly + 180], radius=8, fill=C_SNEAKER)
+    d.rounded_rectangle([lx - 18, ly + 174, lx + 14, ly + 182], radius=4, fill=C_SNEAKER_SOLE)
+    d.line([(lx - 8, ly + 160), (lx + 2, ly + 160)], fill=C_SNEAKER_DARK, width=2) # Laces
+    d.line([(lx - 6, ly + 166), (lx + 4, ly + 166)], fill=C_SNEAKER_DARK, width=2)
 
-    # Front bangs framing face (straight down sides)
-    d.line([(hx - 5, hy - 3), (hx - 5, hy + 14)], fill=C_HAIR_LIGHT, width=1)
-    d.line([(hx - 6, hy), (hx - 6, hy + 16)], fill=C_HAIR, width=1)
+    # Right Leg (viewer's right)
+    rx = cx + 22 + leg_r_off[0] * 3
+    ry = jy + 18 + leg_r_off[1] * 3
+    d.polygon([
+        (rx - 14, ry), (rx - 10, ry + 145),
+        (rx + 12, ry + 145), (rx + 16, ry)
+    ], fill=C_JEANS)
+    # Thigh wash highlight
+    d.rounded_rectangle([rx - 5, ry + 15, rx + 9, ry + 105], radius=6, fill=C_JEANS_LIGHT)
+    # Side seam
+    d.line([(rx + 15, ry), (rx + 12, ry + 145)], fill=C_JEANS_DARK, width=2)
+    # Rolled denim cuff
+    d.rounded_rectangle([rx - 11, ry + 142, rx + 13, ry + 152], radius=4, fill=C_JEANS_CUFF)
+    # Ankle skin peek
+    d.rectangle([rx - 6, ry + 152, rx + 8, ry + 158], fill=C_SKIN)
+    # White Sneaker
+    d.rounded_rectangle([rx - 12, ry + 156, rx + 16, ry + 180], radius=8, fill=C_SNEAKER)
+    d.rounded_rectangle([rx - 14, ry + 174, rx + 18, ry + 182], radius=4, fill=C_SNEAKER_SOLE)
+    d.line([(rx - 2, ry + 160), (rx + 8, ry + 160)], fill=C_SNEAKER_DARK, width=2) # Laces
+    d.line([(rx - 4, ry + 166), (rx + 6, ry + 166)], fill=C_SNEAKER_DARK, width=2)
 
-    d.line([(hx + 5, hy - 3), (hx + 5, hy + 14)], fill=C_HAIR_LIGHT, width=1)
-    d.line([(hx + 6, hy), (hx + 6, hy + 16)], fill=C_HAIR, width=1)
+    # =========================================================================
+    # 3. MIDRIFF & CROP TOP & ARMS
+    # =========================================================================
+    ty = hy + 65
+    # Exposed midriff (bare skin between crop top and jeans!)
+    d.rounded_rectangle([hx - 36, ty + 68, hx + 36, ty + 116], radius=6, fill=C_SKIN)
+    # Delicate navel
+    d.ellipse([hx - 3, ty + 90, hx + 3, ty + 97], fill=C_NAVEL)
+    d.point([(hx, ty + 93)], fill=C_SKIN_SHADOW)
 
-    # Eyebrows
-    d.line([(hx - 4, hy), (hx - 2, hy)], fill=C_HAIR_DARK)
-    d.line([(hx + 2, hy), (hx + 4, hy)], fill=C_HAIR_DARK)
+    # Light gray crop top
+    d.rounded_rectangle([hx - 48, ty, hx + 48, ty + 70], radius=10, fill=C_TOP)
+    # Neck cutout
+    d.ellipse([hx - 18, ty - 6, hx + 18, ty + 14], fill=C_SKIN)
+    d.arc([hx - 18, ty - 6, hx + 18, ty + 14], start=0, end=180, fill=C_TOP_LIGHT, width=3)
+    # Bottom hem shadow of crop top
+    d.line([(hx - 48, ty + 70), (hx + 48, ty + 70)], fill=C_TOP_SHADOW, width=4)
 
-    # 4. Eyes
-    if blink:
-        d.line([(hx - 4, hy + 2), (hx - 2, hy + 2)], fill=C_BLACK, width=1)
-        d.line([(hx + 2, hy + 2), (hx + 4, hy + 2)], fill=C_BLACK, width=1)
-    else:
-        # Left eye
-        d.rectangle([hx - 4, hy + 2, hx - 2, hy + 3], fill=C_WHITE)
-        d.point([(hx - 3, hy + 2)], fill=C_EYE_HAZEL)
-        d.point([(hx - 4, hy + 1)], fill=C_BLACK) # Eyelash
-        # Right eye
-        d.rectangle([hx + 2, hy + 2, hx + 4, hy + 3], fill=C_WHITE)
-        d.point([(hx + 3, hy + 2)], fill=C_EYE_HAZEL)
-        d.point([(hx + 4, hy + 1)], fill=C_BLACK) # Eyelash
+    # Neck
+    d.rectangle([hx - 14, hy + 35, hx + 14, hy + 75], fill=C_SKIN)
+    d.line([(hx - 12, hy + 48), (hx + 12, hy + 48)], fill=C_SKIN_SHADOW, width=2) # Chin shadow
 
-    # Cute nose
-    d.point([(hx, hy + 4)], fill=C_SKIN_SHADOW)
+    # Arms
+    if arm_pose == "down":
+        # Left arm (viewer's left)
+        d.polygon([(hx - 48, ty + 8), (hx - 68, ty + 36), (hx - 54, ty + 44), (hx - 44, ty + 28)], fill=C_TOP)
+        d.rounded_rectangle([hx - 64, ty + 44, hx - 48, ty + 138], radius=8, fill=C_SKIN)
+        # Right arm (viewer's right, her left arm with red bracelet!)
+        d.polygon([(hx + 48, ty + 8), (hx + 68, ty + 36), (hx + 54, ty + 44), (hx + 44, ty + 28)], fill=C_TOP)
+        d.rounded_rectangle([hx + 48, ty + 44, hx + 64, ty + 138], radius=8, fill=C_SKIN)
+        # Red bracelet from the photo!
+        d.rectangle([hx + 47, ty + 128, hx + 65, ty + 133], fill=C_RED_BRACELET)
+
+    elif arm_pose == "run":
+        # Left arm pumping forward
+        d.polygon([(hx - 48, ty + 8), (hx - 68, ty + 36), (hx - 54, ty + 44), (hx - 44, ty + 28)], fill=C_TOP)
+        d.line([(hx - 58, ty + 40), (hx - 78, ty + 100)], fill=C_SKIN, width=14)
+        # Right arm pumping back
+        d.polygon([(hx + 48, ty + 8), (hx + 68, ty + 36), (hx + 54, ty + 44), (hx + 44, ty + 28)], fill=C_TOP)
+        d.line([(hx + 58, ty + 40), (hx + 78, ty + 100)], fill=C_SKIN, width=14)
+        d.line([(hx + 70, ty + 90), (hx + 82, ty + 95)], fill=C_RED_BRACELET, width=4)
+
+    elif arm_pose == "up":
+        # Arms raised in joy / climbing / caught
+        d.polygon([(hx - 48, ty + 8), (hx - 66, ty - 6), (hx - 52, ty - 12), (hx - 42, ty + 18)], fill=C_TOP)
+        d.line([(hx - 58, ty), (hx - 68, ty - 75)], fill=C_SKIN, width=14)
+        d.polygon([(hx + 48, ty + 8), (hx + 66, ty - 6), (hx + 52, ty - 12), (hx + 42, ty + 18)], fill=C_TOP)
+        d.line([(hx + 58, ty), (hx + 68, ty - 75)], fill=C_SKIN, width=14)
+        d.line([(hx + 60, ty - 65), (hx + 74, ty - 65)], fill=C_RED_BRACELET, width=4)
+
+    elif arm_pose == "kiss_hand":
+        # Blowing kiss gesture
+        d.polygon([(hx - 48, ty + 8), (hx - 68, ty + 36), (hx - 54, ty + 44), (hx - 44, ty + 28)], fill=C_TOP)
+        d.rounded_rectangle([hx - 64, ty + 44, hx - 48, ty + 138], radius=8, fill=C_SKIN)
+        # Hand near mouth
+        d.polygon([(hx + 48, ty + 8), (hx + 68, ty + 36), (hx + 54, ty + 44), (hx + 44, ty + 28)], fill=C_TOP)
+        d.line([(hx + 56, ty + 36), (hx + 28, ty - 15)], fill=C_SKIN, width=14)
+        d.line([(hx + 36, ty - 5), (hx + 46, ty)], fill=C_RED_BRACELET, width=4)
+
+    # =========================================================================
+    # 4. FACE & EYES & EXPRESSION
+    # =========================================================================
+    # Face oval
+    d.rounded_rectangle([hx - 38, hy - 36, hx + 38, hy + 46], radius=24, fill=C_SKIN)
+    d.polygon([(hx - 36, hy + 20), (hx, hy + 58), (hx + 36, hy + 20)], fill=C_SKIN)
 
     # Cheeks / Blush
     if blush:
-        d.rectangle([hx - 4, hy + 4, hx - 3, hy + 5], fill=C_BLUSH)
-        d.rectangle([hx + 3, hy + 4, hx + 4, hy + 5], fill=C_BLUSH)
+        d.ellipse([hx - 34, hy + 12, hx - 12, hy + 28], fill=(255, 145, 160, 200))
+        d.ellipse([hx + 12, hy + 12, hx + 34, hy + 28], fill=(255, 145, 160, 200))
     else:
-        d.point([(hx - 4, hy + 5)], fill=C_BLUSH)
-        d.point([(hx + 4, hy + 5)], fill=C_BLUSH)
+        d.ellipse([hx - 32, hy + 14, hx - 14, hy + 26], fill=(255, 165, 175, 120))
+        d.ellipse([hx + 14, hy + 14, hx + 32, hy + 26], fill=(255, 165, 175, 120))
 
-    # 5. Mouth (from photo: cute surprised 'o' or smile / kiss)
-    if mouth == "smile":
-        d.line([(hx - 1, hy + 6), (hx + 1, hy + 6)], fill=(210, 80, 95, 255))
+    # Eyes
+    for side in [-1, 1]:
+        ex = hx + side * 18
+        ey = hy + 8
+
+        if blink:
+            # Closed eye with curved smiling lashes
+            d.arc([ex - 10, ey - 6, ex + 10, ey + 8], start=20, end=160, fill=C_BLACK, width=3)
+            d.line([(ex + side * 8, ey + 4), (ex + side * 12, ey + 1)], fill=C_BLACK, width=2)
+        else:
+            # Almond eye sclera
+            d.ellipse([ex - 10, ey - 8, ex + 10, ey + 8], fill=C_WHITE)
+            # Hazel iris
+            d.ellipse([ex - 6, ey - 7, ex + 6, ey + 7], fill=C_EYE_HAZEL)
+            # Dark pupil
+            d.ellipse([ex - 3, ey - 4, ex + 3, ey + 4], fill=C_BLACK)
+            # Specular catchlight shine
+            d.ellipse([ex - 4, ey - 6, ex - 1, ey - 3], fill=C_WHITE)
+            d.point([(ex + 2, ey + 2)], fill=C_WHITE)
+            # Upper eyeliner & delicate lashes
+            d.arc([ex - 11, ey - 10, ex + 11, ey + 4], start=190, end=350, fill=C_BLACK, width=3)
+            d.line([(ex + side * 10, ey - 5), (ex + side * 14, ey - 9)], fill=C_BLACK, width=2)
+
+        # Eyebrows
+        d.arc([ex - 10, ey - 18, ex + 10, ey - 10], start=200, end=340, fill=C_HAIR_DARK, width=3)
+
+    # Cute nose
+    d.polygon([(hx, hy + 18), (hx - 3, hy + 24), (hx + 3, hy + 24)], fill=C_SKIN_SHADOW)
+
+    # Mouth
+    if mouth == "open":  # Surprised 'o' from photo!
+        d.rounded_rectangle([hx - 7, hy + 32, hx + 7, hy + 46], radius=6, fill=(55, 20, 25, 255))
+        d.ellipse([hx - 5, hy + 33, hx + 5, hy + 37], fill=C_WHITE) # Upper teeth
+        d.arc([hx - 8, hy + 30, hx + 8, hy + 47], start=0, end=360, fill=C_LIP_PINK, width=2)
+    elif mouth == "smile":
+        d.arc([hx - 10, hy + 26, hx + 10, hy + 42], start=20, end=160, fill=C_LIP_DARK, width=3)
+        d.line([(hx - 9, hy + 34), (hx + 9, hy + 34)], fill=C_LIP_PINK, width=2)
     elif mouth == "kiss":
-        d.rectangle([hx - 1, hy + 5, hx + 1, hy + 6], fill=(230, 60, 85, 255))
-        d.point([(hx, hy + 6)], fill=C_BLUSH)
-    elif mouth == "open": # Surprised 'o' from photo!
-        d.rectangle([hx - 1, hy + 5, hx + 1, hy + 7], fill=C_BLACK)
-        d.point([(hx, hy + 6)], fill=(180, 50, 60, 255))
-        d.line([(hx - 1, hy + 5), (hx + 1, hy + 5)], fill=(225, 100, 110, 255))
+        # Puckered sweet lips
+        d.rounded_rectangle([hx - 6, hy + 32, hx + 6, hy + 42], radius=4, fill=C_LIP_PINK)
+        d.ellipse([hx - 3, hy + 35, hx + 3, hy + 39], fill=C_LIP_DARK)
 
+    # =========================================================================
+    # 5. FOREGROUND HAIR (Bangs, center part & drapes over shoulders)
+    # =========================================================================
+    # Center parting at top
+    d.arc([hx - 50, hy - 50, hx + 50, hy], start=180, end=0, fill=C_HAIR_LIGHT, width=8)
+    d.line([(hx, hy - 48), (hx, hy - 32)], fill=C_HAIR_ROOT, width=3)
 
-def draw_girl_torso(d: ImageDraw.ImageDraw, tx, ty, width=12, arm_pose="down"):
-    """
-    Draw cropped light gray t-shirt, exposed midriff & arms:
-    - Loose light gray crop top
-    - Exposed belly with navel
-    - Bare arms
-    - Red bracelet on left wrist!
-    """
-    hw = width // 2
+    # Left drape falling over shoulder & chest
+    d.polygon([
+        (hx - 45, hy - 25),
+        (hx - 52 + hb, hy + 155),
+        (hx - 28 + hb, hy + 170),
+        (hx - 25, hy + 30)
+    ], fill=C_HAIR_BASE)
+    d.line([(hx - 42 + hb, hy - 10), (hx - 40 + hb, hy + 160)], fill=C_HAIR_LIGHT, width=4)
 
-    # 1. Light gray crop top
-    d.rectangle([tx - hw, ty + 1, tx + hw, ty + 7], fill=C_TOP)
-    d.line([(tx - hw + 1, ty + 1), (tx + hw - 1, ty + 1)], fill=C_TOP_LIGHT) # Collar/neckline
-    # Loose hem at bottom of crop top
-    d.line([(tx - hw, ty + 7), (tx + hw, ty + 7)], fill=C_TOP_SHADOW)
-
-    # Neck
-    d.rectangle([tx - 2, ty - 1, tx + 2, ty + 1], fill=C_SKIN)
-
-    # 2. Exposed midriff (bare skin between crop top and jeans!)
-    d.rectangle([tx - hw + 2, ty + 8, tx + hw - 2, ty + 11], fill=C_SKIN)
-    d.point([(tx, ty + 9)], fill=C_NAVEL) # Navel / belly button!
-    d.line([(tx - hw + 2, ty + 8), (tx - hw + 2, ty + 11)], fill=C_SKIN_SHADOW)
-    d.line([(tx + hw - 2, ty + 8), (tx + hw - 2, ty + 11)], fill=C_SKIN_SHADOW)
-
-    # 3. Arms & hands
-    if arm_pose == "down":
-        # Left arm (viewer's left) - bare skin from short sleeve
-        d.rectangle([tx - hw - 2, ty + 2, tx - hw, ty + 4], fill=C_TOP) # Short sleeve
-        d.rectangle([tx - hw - 2, ty + 5, tx - hw, ty + 12], fill=C_SKIN) # Bare arm
-        d.rectangle([tx - hw - 2, ty + 13, tx - hw, ty + 14], fill=C_SKIN_SHADOW) # Hand
-
-        # Right arm (viewer's right, her left arm with red bracelet!)
-        d.rectangle([tx + hw, ty + 2, tx + hw + 2, ty + 4], fill=C_TOP) # Short sleeve
-        d.rectangle([tx + hw, ty + 5, tx + hw + 2, ty + 11], fill=C_SKIN) # Bare arm
-        # Red bracelet from the photo!
-        d.line([(tx + hw, ty + 12), (tx + hw + 2, ty + 12)], fill=C_RED_BRACELET)
-        d.rectangle([tx + hw, ty + 13, tx + hw + 2, ty + 14], fill=C_SKIN_SHADOW) # Hand
-
-    elif arm_pose == "run":
-        # Pumping arms in run
-        d.rectangle([tx - hw - 2, ty + 2, tx - hw, ty + 4], fill=C_TOP)
-        d.line([(tx - hw - 1, ty + 5), (tx - hw - 4, ty + 9)], fill=C_SKIN, width=2)
-        d.rectangle([tx + hw, ty + 2, tx + hw + 2, ty + 4], fill=C_TOP)
-        d.line([(tx + hw + 1, ty + 5), (tx + hw + 4, ty + 9)], fill=C_SKIN, width=2)
-        d.point([(tx + hw + 4, ty + 9)], fill=C_RED_BRACELET)
-
-    elif arm_pose == "up":
-        # Arms raised in joy / climbing
-        d.rectangle([tx - hw - 2, ty + 1, tx - hw, ty + 3], fill=C_TOP)
-        d.line([(tx - hw - 1, ty + 1), (tx - hw - 3, ty - 6)], fill=C_SKIN, width=2)
-        d.rectangle([tx + hw, ty + 1, tx + hw + 2, ty + 3], fill=C_TOP)
-        d.line([(tx + hw + 1, ty + 1), (tx + hw + 3, ty - 6)], fill=C_SKIN, width=2)
-        d.point([(tx + hw + 3, ty - 4)], fill=C_RED_BRACELET)
-
-
-def draw_girl_legs(d: ImageDraw.ImageDraw, cx, cy, l_off=(0, 0), r_off=(0, 0)):
-    """
-    Draw blue skinny denim jeans and white sneakers:
-    - High-waist denim with waistband button
-    - Tight fitted jeans
-    - Rolled cuffs at ankle
-    - White sneakers with gray soles
-    """
-    # Waistband / belt area of jeans
-    d.rectangle([cx - 5, cy, cx + 5, cy + 2], fill=C_JEANS)
-    d.point([(cx, cy + 1)], fill=C_JEANS_WAIST) # Brass button
-
-    # Left leg (viewer's left)
-    lx = cx - 3 + l_off[0]
-    ly = cy + 2 + l_off[1]
-    # Denim thigh & calf
-    d.rectangle([lx - 1, ly, lx + 2, ly + 8], fill=C_JEANS)
-    d.line([(lx, ly + 1), (lx, ly + 7)], fill=C_JEANS_LIGHT) # Wash fade
-    d.line([(lx - 1, ly), (lx - 1, ly + 8)], fill=C_JEANS_DARK) # Inseam
-    # Jean cuff
-    d.line([(lx - 1, ly + 8), (lx + 2, ly + 8)], fill=(125, 155, 195, 255))
-    # Ankle skin peek
-    d.line([(lx - 1, ly + 9), (lx + 2, ly + 9)], fill=C_SKIN)
-    # White sneaker
-    d.rectangle([lx - 2, ly + 10, lx + 2, ly + 12], fill=C_SNEAKER)
-    d.point([(lx, ly + 10)], fill=C_SNEAKER_SHADOW) # Laces
-    d.line([(lx - 2, ly + 13), (lx + 3, ly + 13)], fill=C_SNEAKER_SOLE) # Sole
-
-    # Right leg (viewer's right)
-    rx = cx + 3 + r_off[0]
-    ry = cy + 2 + r_off[1]
-    d.rectangle([rx - 2, ry, rx + 1, ry + 8], fill=C_JEANS)
-    d.line([(rx, ry + 1), (rx, ry + 7)], fill=C_JEANS_LIGHT)
-    d.line([(rx + 1, ry), (rx + 1, ry + 8)], fill=C_JEANS_DARK)
-    # Jean cuff
-    d.line([(rx - 2, ry + 8), (rx + 1, ry + 8)], fill=(125, 155, 195, 255))
-    # Ankle skin peek
-    d.line([(rx - 2, ry + 9), (rx + 1, ry + 9)], fill=C_SKIN)
-    # White sneaker
-    d.rectangle([rx - 2, ry + 10, rx + 2, ry + 12], fill=C_SNEAKER)
-    d.point([(rx, ry + 10)], fill=C_SNEAKER_SHADOW)
-    d.line([(rx - 3, ry + 13), (rx + 2, ry + 13)], fill=C_SNEAKER_SOLE)
+    # Right drape falling over shoulder & chest
+    d.polygon([
+        (hx + 45, hy - 25),
+        (hx + 52 - hb, hy + 155),
+        (hx + 28 - hb, hy + 170),
+        (hx + 25, hy + 30)
+    ], fill=C_HAIR_BASE)
+    d.line([(hx + 42 - hb, hy - 10), (hx + 40 - hb, hy + 160)], fill=C_HAIR_LIGHT, width=4)
 
 
 # =========================================================================
-# ANIMATION SETS
+# ANIMATION SETS (512x512 rendered, downsampled with Lanczos to 256x256)
 # =========================================================================
+
+def finalize_frame(im: Image.Image) -> Image.Image:
+    """Downsample with high-quality Lanczos filter to 256x256"""
+    return im.resize((OUTPUT_SIZE, OUTPUT_SIZE), Image.Resampling.LANCZOS)
+
 
 def gen_idle():
     frames = []
-    bobs = [0, -1, 0, 1]
+    bobs = [0, -2, 0, 2]
     for i, bob in enumerate(bobs):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 32, 26 + bob
-
-        draw_girl_legs(d, 32, 40)
-        draw_girl_torso(d, cx, cy + 2, arm_pose="down")
-        draw_girl_head(d, cx, cy - 8, blink=(i == 2), blush=False,
-                       mouth="open" if i == 0 else "smile",
-                       hair_blow=(1 if i % 2 == 0 else -1))
-        frames.append(im)
+        draw_girl(d, cx=256, cy=240 + bob,
+                  arm_pose="down",
+                  blink=(i == 2), blush=False,
+                  mouth="open" if i == 0 else "smile",
+                  hair_blow=(1 if i % 2 == 0 else -1))
+        frames.append(finalize_frame(im))
     return frames
 
 
 def gen_walk():
     frames = []
     walk_data = [
-        (0,  2,  0, -2, -1),
-        (-1, 1, -1, -1,  0),
-        (-2,-1,  0,  1, -1),
-        (0, -2, -1,  2,  0),
-        (-1,-1,  0,  1, -1),
+        (0,  3,  0, -3, -1),
         (-2, 1, -1, -1,  0),
+        (-4,-2,  0,  2, -1),
+        (0, -3, -1,  3,  0),
+        (-2,-1,  0,  1, -1),
+        (-4, 2, -1, -2,  0),
     ]
     for i, (bob, ldx, ldy, rdx, rdy) in enumerate(walk_data):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 32, 26 + bob
-
-        draw_girl_legs(d, 32, 40, (ldx, ldy), (rdx, rdy))
-        draw_girl_torso(d, cx, cy + 2, arm_pose="down")
-        draw_girl_head(d, cx, cy - 8, blink=False,
-                       mouth="smile",
-                       hair_blow=(2 if i % 2 == 0 else -1))
-        frames.append(im)
+        draw_girl(d, cx=256, cy=240 + bob,
+                  leg_l_off=(ldx, ldy), leg_r_off=(rdx, rdy),
+                  arm_pose="down", blink=False,
+                  mouth="smile",
+                  hair_blow=(2 if i % 2 == 0 else -1))
+        frames.append(finalize_frame(im))
     return frames
 
 
 def gen_run():
-    """Playful sprint fleeing from the pirate!"""
+    """Dynamic sprint when playfully fleeing from pirate!"""
     frames = []
     run_data = [
-        (-2,  4, -2, -4, -3),
-        (1,   2,  0, -2, -1),
-        (-2, -4, -3,  4, -2),
-        (1,  -2, -1,  2,  0),
+        (-4,  6, -3, -6, -4),
+        (2,   3,  0, -3, -1),
+        (-4, -6, -4,  6, -3),
+        (2,  -3, -1,  3,  0),
     ]
     for i, (bob, ldx, ldy, rdx, rdy) in enumerate(run_data):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 33, 26 + bob
-
-        draw_girl_legs(d, 32, 40, (ldx, ldy), (rdx, rdy))
-        draw_girl_torso(d, cx, cy + 2, arm_pose="run")
-        # Hair flying behind in sprint!
-        draw_girl_head(d, cx, cy - 8, mouth="open", hair_blow=-5)
-        frames.append(im)
+        draw_girl(d, cx=256, cy=240 + bob,
+                  leg_l_off=(ldx, ldy), leg_r_off=(rdx, rdy),
+                  arm_pose="run", mouth="open",
+                  hair_blow=-6)
+        frames.append(finalize_frame(im))
     return frames
 
 
 def gen_jump():
     frames = []
-    # Frame 0: leap
-    im0 = create_blank()
+    # Leap
+    im0 = create_canvas()
     d0 = ImageDraw.Draw(im0)
-    cx, cy = 32, 22
-    draw_girl_legs(d0, 32, 40, (-2, -4), (2, -5))
-    draw_girl_torso(d0, cx, cy + 2, arm_pose="up")
-    draw_girl_head(d0, cx, cy - 8, mouth="open", hair_blow=-3)
-    frames.append(im0)
+    draw_girl(d0, cx=256, cy=220,
+              leg_l_off=(-3, -5), leg_r_off=(3, -6),
+              arm_pose="up", mouth="open", hair_blow=-4)
+    frames.append(finalize_frame(im0))
 
-    # Frame 1: peak
-    im1 = create_blank()
+    # Peak
+    im1 = create_canvas()
     d1 = ImageDraw.Draw(im1)
-    cx, cy = 32, 20
-    draw_girl_legs(d1, 32, 40, (-3, -6), (3, -6))
-    draw_girl_torso(d1, cx, cy + 2, arm_pose="up")
-    draw_girl_head(d1, cx, cy - 8, mouth="smile", hair_blow=-4)
-    frames.append(im1)
+    draw_girl(d1, cx=256, cy=200,
+              leg_l_off=(-4, -8), leg_r_off=(4, -8),
+              arm_pose="up", mouth="smile", hair_blow=-5)
+    frames.append(finalize_frame(im1))
     return frames
 
 
 def gen_fall():
     frames = []
     for i in range(2):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 32, 25
-        draw_girl_legs(d, 32, 40, (-3, -2), (3, -2))
-        draw_girl_torso(d, cx, cy + 2, arm_pose="up")
-        draw_girl_head(d, cx, cy - 8, mouth="open", hair_blow=3)
-        frames.append(im)
+        draw_girl(d, cx=256, cy=235,
+                  leg_l_off=(-4, -2), leg_r_off=(4, -2),
+                  arm_pose="up", mouth="open", hair_blow=4)
+        frames.append(finalize_frame(im))
     return frames
 
 
 def gen_land():
     frames = []
-    # Frame 0: squat
-    im0 = create_blank()
+    # Squat
+    im0 = create_canvas()
     d0 = ImageDraw.Draw(im0)
-    draw_girl_legs(d0, 32, 42, (-2, 1), (2, 1))
-    draw_girl_torso(d0, 32, 30, arm_pose="down")
-    draw_girl_head(d0, 32, 20, mouth="smile")
-    frames.append(im0)
+    draw_girl(d0, cx=256, cy=260,
+              leg_l_off=(-3, 2), leg_r_off=(3, 2),
+              arm_pose="down", mouth="smile")
+    frames.append(finalize_frame(im0))
 
-    # Frame 1: recover
-    im1 = create_blank()
+    # Recover
+    im1 = create_canvas()
     d1 = ImageDraw.Draw(im1)
-    draw_girl_legs(d1, 32, 40)
-    draw_girl_torso(d1, 32, 28, arm_pose="down")
-    draw_girl_head(d1, 32, 18, mouth="smile")
-    frames.append(im1)
+    draw_girl(d1, cx=256, cy=240, arm_pose="down", mouth="smile")
+    frames.append(finalize_frame(im1))
     return frames
 
 
 def gen_kiss():
-    """Sweet romantic kiss: leaning forward, pouted lips, rosy blush, floating hearts!"""
+    """Sweet romantic kiss: leaning forward, rosy blush, pouted lips, glowing floating hearts!"""
     frames = []
     kiss_data = [
-        (2, "smile", True,  None, 0),
-        (4, "kiss",  True,  -8,   4),
-        (5, "kiss",  True,  -14,  6),
-        (3, "smile", True,  -20,  5),
+        (4,  "smile", True,  None, 0),
+        (10, "kiss",  True,  -20,  18),
+        (14, "kiss",  True,  -45,  24),
+        (8,  "smile", True,  -65,  20),
     ]
     for i, (lx, mouth, blush, hy, hsize) in enumerate(kiss_data):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 32 + lx, 26
-
-        draw_girl_legs(d, 32, 40, (0, 0), (lx, 0))
-        draw_girl_torso(d, cx, cy + 2, arm_pose="down")
+        draw_girl(d, cx=256 + lx, cy=240,
+                  leg_l_off=(0, 0), leg_r_off=(lx // 3, 0),
+                  arm_pose="down", blink=True, blush=blush,
+                  mouth=mouth, hair_blow=-3, lean_x=lx)
 
         if hy is not None:
-            draw_heart(d, cx + 8, cy + hy, size=hsize)
+            draw_smooth_heart(d, 256 + lx + 35, 130 + hy, size=hsize)
 
-        draw_girl_head(d, cx, cy - 8, blink=True, blush=blush, mouth=mouth, hair_blow=-2)
-        frames.append(im)
+        frames.append(finalize_frame(im))
     return frames
 
 
@@ -409,74 +446,62 @@ def gen_blush():
     """Giggling / blowing kiss with heart floating up"""
     frames = []
     for i in range(4):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 32, 26
-
-        draw_girl_legs(d, 32, 40)
-        draw_girl_torso(d, cx, cy + 2, arm_pose="down")
-
-        # Hand blowing kiss
-        d.line([(cx + 4, cy + 6), (cx + 9, cy + 1)], fill=C_SKIN, width=2)
-        d.point([(cx + 8, cy + 3)], fill=C_RED_BRACELET)
-        draw_heart(d, cx + 12 + i * 2, cy - 2 - i * 3, size=4)
-
-        draw_girl_head(d, cx, cy - 8, blink=(i % 2 == 1), blush=True,
-                       mouth="kiss" if i == 0 else "smile")
-        frames.append(im)
+        draw_girl(d, cx=256, cy=240,
+                  arm_pose="kiss_hand" if i < 2 else "down",
+                  blink=(i % 2 == 1), blush=True,
+                  mouth="kiss" if i == 0 else "smile")
+        draw_smooth_heart(d, 290 + i * 8, 110 - i * 15, size=14)
+        frames.append(finalize_frame(im))
     return frames
 
 
 def gen_climb():
-    """Climbing wall/border"""
+    """Climbing desktop borders/windows"""
     frames = []
     for i in range(4):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 32, 26 + (1 if i % 2 == 0 else -1)
-
-        draw_girl_legs(d, 32, 40, (-1, -2 if i % 2 == 0 else 2), (2, 2 if i % 2 == 0 else -2))
-        draw_girl_torso(d, cx, cy + 2, arm_pose="up")
-        draw_girl_head(d, cx, cy - 8, mouth="smile")
-        frames.append(im)
+        draw_girl(d, cx=256, cy=240 + (2 if i % 2 == 0 else -2),
+                  leg_l_off=(-2, -3 if i % 2 == 0 else 3),
+                  leg_r_off=(3, 3 if i % 2 == 0 else -3),
+                  arm_pose="up", mouth="smile")
+        frames.append(finalize_frame(im))
     return frames
 
 
 def gen_dragged():
-    """Being carried by mouse: wide surprised 'o' expression just like photo!"""
+    """Carried by mouse: wide surprised 'o' expression matching reference photo!"""
     frames = []
     for i in range(4):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 32, 26
-
-        draw_girl_legs(d, 32, 40, (-2 if i % 2 == 0 else 2, -2), (2 if i % 2 == 0 else -2, 1))
-        draw_girl_torso(d, cx, cy + 2, arm_pose="up")
-        draw_girl_head(d, cx, cy - 8, blink=False, blush=True, mouth="open", hair_blow=3)
-        frames.append(im)
+        draw_girl(d, cx=256, cy=240,
+                  leg_l_off=(-3 if i % 2 == 0 else 3, -3),
+                  leg_r_off=(3 if i % 2 == 0 else -3, 2),
+                  arm_pose="up", blink=False, blush=True,
+                  mouth="open", hair_blow=5)
+        frames.append(finalize_frame(im))
     return frames
 
 
 def gen_sleep():
-    """Resting peacefully"""
+    """Resting gracefully on desktop"""
     frames = []
     for i in range(3):
-        im = create_blank()
+        im = create_canvas()
         d = ImageDraw.Draw(im)
-        cx, cy = 32, 32
-
-        # Sitting comfortably
-        d.rectangle([cx - 5, cy + 6, cx + 5, cy + 9], fill=C_JEANS)
-        d.rectangle([cx - 7, cy + 8, cx - 4, cy + 11], fill=C_SNEAKER)
-        d.rectangle([cx + 4, cy + 8, cx + 7, cy + 11], fill=C_SNEAKER)
-
-        draw_girl_torso(d, cx, cy - 2, arm_pose="down")
-        draw_girl_head(d, cx, cy - 10, blink=True, blush=True, mouth="smile")
-
-        d.text((cx + 10, cy - 14 - i * 2), "z", fill=C_HEART_LIGHT)
+        # Sitting position
+        draw_girl(d, cx=256, cy=265,
+                  leg_l_off=(-4, 2), leg_r_off=(4, 2),
+                  arm_pose="down", blink=True, blush=True,
+                  mouth="smile")
+        # Floating Z and small heart
+        d.text((290, 80 - i * 10), "z", fill=(255, 170, 195, 255))
         if i >= 1:
-            draw_heart(d, cx + 18, cy - 18 - i * 2, size=4)
-        frames.append(im)
+            draw_smooth_heart(d, 320, 60 - i * 10, size=10)
+        frames.append(finalize_frame(im))
     return frames
 
 
@@ -505,7 +530,7 @@ def generate_all_piratess_sprites(output_dir="assets/sprites/piratess"):
             p_l = os.path.join(output_dir, f"{anim_name}_left_{idx}.png")
             frame_l.save(p_l)
 
-    print(f"Girl sprites generated successfully in {output_dir}!")
+    print(f"HD Smooth Girl sprites generated successfully in {output_dir}!")
 
 
 if __name__ == "__main__":

@@ -136,12 +136,12 @@ class PiratessWindow(QWidget):
                 pix_r = QPixmap(r_file).scaled(
                     self.w, self.h,
                     Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.FastTransformation
+                    Qt.TransformationMode.SmoothTransformation
                 )
                 pix_l = QPixmap(l_file).scaled(
                     self.w, self.h,
                     Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.FastTransformation
+                    Qt.TransformationMode.SmoothTransformation
                 )
                 self.frames[anim]["right"].append(pix_r)
                 self.frames[anim]["left"].append(pix_l)

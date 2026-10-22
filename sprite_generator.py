@@ -1,12 +1,12 @@
 """
-High-Definition Smooth Cartoon Sprite Generator for the Pirate Captain.
+High-Definition Smooth Cartoon Sprite Generator for Donald Trump.
 Renders smooth anti-aliased 256x256 frames (via 512x512 Lanczos supersampling):
-- Tricorn captain hat with curved gold trim, skull emblem, and crimson plume
-- Weathered captain face with eye patch, bushy eyebrows, and curled mustache
-- Full rich pirate beard with braided highlights
-- Crimson velvet pirate coat with gold frogging and brass buttons
-- Classic peg leg (wooden with brass collar & iron ferrule) and tall pirate boot
-- Steel cutlass with golden basket hilt
+- Iconic golden-blonde swept-back hairstyle with signature volume
+- Tailored dark navy blue suit jacket (open) with matching trousers
+- Signature long bright red tie hanging below belt line
+- Crisp white collared dress shirt with collar points
+- Polished black leather dress shoes
+- Signature gestures: Pointing finger forward ('You're fired!'), swagger walk, fist pump celebration
 """
 
 import os
@@ -18,30 +18,36 @@ RENDER_SIZE = 512
 
 # HD Palette
 C_TRANSPARENT = (0, 0, 0, 0)
-C_BLACK       = (22, 20, 26, 255)
+C_BLACK       = (20, 20, 24, 255)
 C_WHITE       = (255, 255, 255, 255)
 
-C_SKIN        = (246, 196, 156, 255)
-C_SKIN_SHADOW = (212, 158, 118, 255)
-C_BEARD       = (68, 38, 22, 255)
-C_BEARD_LIGHT = (98, 58, 34, 255)
+# Skin & Tan
+C_SKIN        = (250, 204, 168, 255)
+C_SKIN_SHADOW = (226, 166, 126, 255)
+C_TAN_BLUSH   = (238, 154, 108, 150)
 
-C_HAT         = (32, 26, 36, 255)
-C_HAT_GOLD    = (245, 195, 55, 255)
-C_FEATHER     = (225, 45, 45, 255)
+# Signature Hair
+C_HAIR        = (246, 210, 88, 255)
+C_HAIR_LIGHT  = (255, 238, 142, 255)
+C_HAIR_DARK   = (208, 158, 48, 255)
 
-C_COAT        = (185, 35, 45, 255)
-C_COAT_DARK   = (135, 22, 30, 255)
-C_SHIRT       = (248, 245, 238, 255)
-C_BELT        = (45, 30, 22, 255)
-C_BUCKLE      = (255, 215, 60, 255)
-C_PANTS       = (40, 65, 115, 255)
+# Suit & Clothing
+C_SUIT        = (22, 34, 56, 255)
+C_SUIT_LIGHT  = (38, 56, 90, 255)
+C_SUIT_DARK   = (12, 20, 36, 255)
 
-C_BOOT        = (52, 34, 26, 255)
-C_BOOT_FOLD   = (75, 48, 38, 255)
-C_WOOD        = (165, 105, 55, 255)
-C_STEEL       = (215, 225, 238, 255)
-C_STEEL_DARK  = (145, 158, 175, 255)
+C_SHIRT       = (255, 255, 255, 255)
+C_SHIRT_SHAD  = (220, 224, 232, 255)
+
+C_TIE         = (228, 28, 45, 255)
+C_TIE_DARK    = (175, 18, 32, 255)
+C_TIE_LIGHT   = (248, 65, 82, 255)
+
+C_BELT        = (18, 18, 22, 255)
+C_BUCKLE      = (215, 220, 230, 255)
+
+C_SHOE        = (18, 18, 22, 255)
+C_SHOE_SOLE   = (38, 38, 42, 255)
 
 
 def create_canvas():
@@ -52,150 +58,187 @@ def finalize_frame(im: Image.Image) -> Image.Image:
     return im.resize((OUTPUT_SIZE, OUTPUT_SIZE), Image.Resampling.LANCZOS)
 
 
-def draw_pirate_captain(d: ImageDraw.ImageDraw, cx=256, cy=245,
-                        leg_l_off=(0, 0), leg_r_off=(0, 0),
-                        arm_pose="down", mouth="smirk", eye_blink=False,
-                        hat_tilt=0, lean_x=0):
+def draw_trump(d: ImageDraw.ImageDraw, cx=256, cy=245,
+               leg_l_off=(0, 0), leg_r_off=(0, 0),
+               arm_pose="walk", eye_blink=False,
+               mouth="speech", hair_blow=0, lean_x=0, tie_swing=0):
+    """
+    Renders Donald Trump on 512x512 canvas.
+    """
     hx = cx + lean_x
     hy = cy - 110
 
     # =========================================================================
-    # 1. LEGS (Boot on Left, Peg Leg on Right)
+    # 1. LEGS (Navy Trousers & Black Dress Shoes)
     # =========================================================================
     jy = cy + 45
-    d.rectangle([cx - 45, jy, cx + 45, jy + 25], fill=C_PANTS)
 
-    # Left Leg: Tall Leather Boot
-    lx = cx - 25 + leg_l_off[0] * 3
+    # Left Leg
+    lx = cx - 24 + leg_l_off[0] * 3
     ly = jy + 18 + leg_l_off[1] * 3
-    d.polygon([(lx - 18, ly), (lx + 12, ly), (lx + 10, ly + 95), (lx - 20, ly + 95)], fill=C_BOOT)
-    d.rounded_rectangle([lx - 24, ly, lx + 16, ly + 32], radius=6, fill=C_BOOT_FOLD)
-    d.rounded_rectangle([lx - 26, ly + 90, lx + 14, ly + 108], radius=6, fill=(35, 22, 16, 255)) # Foot
+    d.polygon([
+        (cx - 36, jy), (cx - 10, jy),
+        (lx + 8, ly + 145), (lx - 18, ly + 145)
+    ], fill=C_SUIT)
+    d.line([(cx - 24, jy), (lx - 5, ly + 140)], fill=C_SUIT_LIGHT, width=3) # Crease line
+    # Left Black Dress Shoe
+    d.polygon([
+        (lx - 26, ly + 142), (lx + 12, ly + 142),
+        (lx + 18, ly + 158), (lx - 28, ly + 158)
+    ], fill=C_SHOE)
+    d.line([(lx - 28, ly + 158), (lx + 18, ly + 158)], fill=C_SHOE_SOLE, width=3)
 
-    # Right Leg: Peg Leg (Wooden peg + brass collar + iron tip)
-    rx = cx + 25 + leg_r_off[0] * 3
+    # Right Leg
+    rx = cx + 24 + leg_r_off[0] * 3
     ry = jy + 18 + leg_r_off[1] * 3
-    d.polygon([(rx - 14, ry), (rx + 14, ry), (rx + 10, ry + 22), (rx - 10, ry + 22)], fill=C_PANTS)
-    # Brass knee collar
-    d.rounded_rectangle([rx - 10, ry + 20, rx + 10, ry + 32], radius=4, fill=C_HAT_GOLD)
-    # Wooden peg
-    d.polygon([(rx - 5, ry + 32), (rx + 5, ry + 32), (rx + 3, ry + 100), (rx - 3, ry + 100)], fill=C_WOOD)
-    # Iron tip
-    d.rounded_rectangle([rx - 4, ry + 98, rx + 4, ry + 108], radius=2, fill=(80, 85, 95, 255))
+    d.polygon([
+        (cx + 10, jy), (cx + 36, jy),
+        (rx + 18, ry + 145), (rx - 8, ry + 145)
+    ], fill=C_SUIT)
+    d.line([(cx + 24, jy), (rx + 5, ry + 140)], fill=C_SUIT_LIGHT, width=3) # Crease line
+    # Right Black Dress Shoe
+    d.polygon([
+        (rx - 12, ry + 142), (rx + 26, ry + 142),
+        (rx + 28, ry + 158), (rx - 18, ry + 158)
+    ], fill=C_SHOE)
+    d.line([(rx - 18, ry + 158), (rx + 28, ry + 158)], fill=C_SHOE_SOLE, width=3)
 
     # =========================================================================
-    # 2. TORSO & PIRATE COAT
+    # 2. TORSO (White Shirt, Belt, Long Red Tie, Open Navy Suit Jacket)
     # =========================================================================
-    ty = hy + 65
-    d.rounded_rectangle([hx - 54, ty, hx + 54, ty + 85], radius=14, fill=C_COAT)
-    # White ruffled shirt center
-    d.polygon([(hx - 22, ty), (hx + 22, ty), (hx, ty + 50)], fill=C_SHIRT)
-    d.line([(hx, ty + 10), (hx, ty + 45)], fill=(210, 205, 195, 255), width=2) # shirt ruffle
+    ty = hy + 60
+    # White dress shirt base
+    d.rounded_rectangle([hx - 38, ty, hx + 38, ty + 85], radius=6, fill=C_SHIRT)
 
-    # Gold buttons & braid
-    for by in [ty + 18, ty + 38, ty + 58]:
-        d.ellipse([hx - 32, by - 5, hx - 22, by + 5], fill=C_HAT_GOLD)
-        d.ellipse([hx + 22, by - 5, hx + 32, by + 5], fill=C_HAT_GOLD)
-        d.line([(hx - 27, by), (hx - 12, by)], fill=C_HAT_GOLD, width=3)
-        d.line([(hx + 12, by), (hx + 27, by)], fill=C_HAT_GOLD, width=3)
+    # White collar
+    d.polygon([(hx - 24, ty - 8), (hx - 5, ty + 16), (hx - 18, ty + 12)], fill=C_SHIRT)
+    d.polygon([(hx + 24, ty - 8), (hx + 5, ty + 16), (hx + 18, ty + 12)], fill=C_SHIRT)
+    d.line([(hx - 24, ty - 8), (hx - 5, ty + 16)], fill=C_SHIRT_SHAD, width=2)
+    d.line([(hx + 24, ty - 8), (hx + 5, ty + 16)], fill=C_SHIRT_SHAD, width=2)
 
-    # Belt & Large Golden Buckle
-    d.rectangle([hx - 52, ty + 70, hx + 52, ty + 92], fill=C_BELT)
-    d.rounded_rectangle([hx - 20, ty + 66, hx + 20, ty + 96], radius=4, outline=C_BUCKLE, width=5)
+    # Belt
+    d.rectangle([hx - 38, ty + 72, hx + 38, ty + 84], fill=C_BELT)
+    d.rectangle([hx - 8, ty + 72, hx + 8, ty + 84], fill=C_BUCKLE)
 
-    # Cutlass / Saber on hip
-    d.line([(hx + 42, ty + 40), (hx + 82, ty + 130)], fill=C_STEEL, width=7)
-    d.line([(hx + 44, ty + 40), (hx + 80, ty + 125)], fill=C_WHITE, width=2) # highlight
-    d.ellipse([hx + 36, ty + 34, hx + 52, ty + 50], fill=C_HAT_GOLD) # Basket hilt
+    # Signature Long Red Tie (hanging down past belt line!)
+    ts = tie_swing * 2
+    d.polygon([
+        (hx - 7, ty + 10), (hx + 7, ty + 10),
+        (hx + 10 + ts, ty + 95), (hx + ts, ty + 108), (hx - 10 + ts, ty + 95)
+    ], fill=C_TIE)
+    d.line([(hx - 7, ty + 12), (hx - 9 + ts, ty + 94)], fill=C_TIE_DARK, width=2)
+    d.line([(hx + 5, ty + 12), (hx + 7 + ts, ty + 94)], fill=C_TIE_LIGHT, width=2)
+
+    # Open Navy Suit Jacket (left & right flaps)
+    d.polygon([
+        (hx - 58, ty), (hx - 24, ty),
+        (hx - 16, ty + 86), (hx - 60, ty + 88)
+    ], fill=C_SUIT)
+    d.polygon([
+        (hx + 24, ty), (hx + 58, ty),
+        (hx + 60, ty + 88), (hx + 16, ty + 86)
+    ], fill=C_SUIT)
+    # Suit lapels
+    d.line([(hx - 24, ty), (hx - 16, ty + 46)], fill=C_SUIT_LIGHT, width=4)
+    d.line([(hx + 24, ty), (hx + 16, ty + 46)], fill=C_SUIT_LIGHT, width=4)
 
     # Arms
-    if arm_pose == "down":
-        d.polygon([(hx - 52, ty + 8), (hx - 74, ty + 40), (hx - 58, ty + 48), (hx - 48, ty + 30)], fill=C_COAT)
-        d.rounded_rectangle([hx - 70, ty + 44, hx - 52, ty + 115], radius=8, fill=C_COAT)
-        d.rounded_rectangle([hx - 68, ty + 115, hx - 54, ty + 130], radius=5, fill=C_SKIN) # Hand
+    if arm_pose == "walk":
+        # Left arm swinging back
+        d.line([(hx - 50, ty + 12), (hx - 75, ty + 75)], fill=C_SUIT, width=18)
+        d.ellipse([hx - 85, ty + 72, cx - 68, ty + 88], fill=C_SKIN)
 
-        d.polygon([(hx + 52, ty + 8), (hx + 74, ty + 40), (hx + 58, ty + 48), (hx + 48, ty + 30)], fill=C_COAT)
-        d.rounded_rectangle([hx + 52, ty + 44, hx + 70, ty + 115], radius=8, fill=C_COAT)
-        d.rounded_rectangle([hx + 54, ty + 115, hx + 68, ty + 130], radius=5, fill=C_SKIN) # Hand
+        # Right arm swinging forward
+        d.line([(hx + 50, ty + 12), (hx + 78, ty + 75)], fill=C_SUIT, width=18)
+        d.ellipse([hx + 68, ty + 72, cx + 85, ty + 88], fill=C_SKIN)
 
-    elif arm_pose == "cutlass_swing":
-        # Left arm back
-        d.rounded_rectangle([hx - 72, ty + 20, hx - 54, ty + 95], radius=8, fill=C_COAT)
-        # Right arm swinging cutlass forward!
-        d.line([(hx + 50, ty + 20), (hx + 105, ty - 20)], fill=C_COAT, width=16)
-        d.line([(hx + 105, ty - 20), (hx + 160, ty - 60)], fill=C_STEEL, width=8) # Raised blade!
-        d.ellipse([hx + 95, ty - 30, hx + 115, ty - 10], fill=C_HAT_GOLD)
+    elif arm_pose == "point":
+        # The iconic finger point from photo!
+        # Left arm relaxed
+        d.line([(hx - 50, ty + 12), (hx - 72, ty + 70)], fill=C_SUIT, width=18)
+        d.ellipse([hx - 82, ty + 68, hx - 66, ty + 84], fill=C_SKIN)
+
+        # Right arm pointing forward
+        d.line([(hx + 50, ty + 12), (hx + 105, ty + 4)], fill=C_SUIT, width=18)
+        d.rectangle([hx + 104, ty - 3, hx + 112, ty + 11], fill=C_SHIRT) # White cuff
+        d.ellipse([hx + 110, ty - 4, hx + 128, ty + 12], fill=C_SKIN) # Fist
+        d.line([(hx + 122, ty + 4), (hx + 155, ty + 2)], fill=C_SKIN, width=6) # Pointing finger!
+
+    elif arm_pose == "fist_pump":
+        # Double fist pump celebration / dance!
+        d.line([(hx - 50, ty + 12), (hx - 70, ty - 25)], fill=C_SUIT, width=18)
+        d.ellipse([hx - 78, ty - 40, hx - 62, ty - 24], fill=C_SKIN)
+
+        d.line([(hx + 50, ty + 12), (hx + 70, ty - 25)], fill=C_SUIT, width=18)
+        d.ellipse([hx + 62, ty - 40, hx + 78, ty - 24], fill=C_SKIN)
+
+    elif arm_pose == "dragged":
+        # Flailing arms while being carried by mouse!
+        d.line([(hx - 50, ty + 12), (hx - 80, ty - 40)], fill=C_SUIT, width=18)
+        d.ellipse([hx - 92, ty - 52, hx - 72, ty - 34], fill=C_SKIN)
+
+        d.line([(hx + 50, ty + 12), (hx + 80, ty - 40)], fill=C_SUIT, width=18)
+        d.ellipse([hx + 72, ty - 52, hx + 92, ty - 34], fill=C_SKIN)
 
     elif arm_pose == "up":
-        # Cheering / climbing
-        d.line([(hx - 54, ty + 20), (hx - 65, ty - 65)], fill=C_COAT, width=16)
-        d.line([(hx + 54, ty + 20), (hx + 65, ty - 65)], fill=C_COAT, width=16)
+        # Climbing borders
+        d.line([(hx - 50, ty + 12), (hx - 62, ty - 60)], fill=C_SUIT, width=18)
+        d.line([(hx + 50, ty + 12), (hx + 62, ty - 60)], fill=C_SUIT, width=18)
 
     # =========================================================================
     # 3. HEAD & FACE
     # =========================================================================
-    d.rounded_rectangle([hx - 36, hy - 25, hx + 36, hy + 45], radius=20, fill=C_SKIN)
+    d.rounded_rectangle([hx - 32, hy - 20, hx + 32, hy + 45], radius=18, fill=C_SKIN)
+    d.polygon([(hx - 30, hy + 20), (hx, hy + 50), (hx + 30, hy + 20)], fill=C_SKIN) # Jaw
 
-    # Eye patch on left eye
-    d.line([(hx - 36, hy - 5), (hx + 36, hy + 15)], fill=C_BLACK, width=3)
-    d.ellipse([hx - 28, hy - 4, hx - 10, hy + 14], fill=C_BLACK)
+    # Tan / Bronzer contour
+    d.ellipse([hx - 28, hy + 10, hx - 12, hy + 26], fill=C_TAN_BLUSH)
+    d.ellipse([hx + 12, hy + 10, hx + 28, hy + 26], fill=C_TAN_BLUSH)
 
-    # Right eye
-    if eye_blink:
-        d.line([(hx + 10, hy + 5), (hx + 28, hy + 5)], fill=C_BLACK, width=3)
-    else:
-        d.ellipse([hx + 10, hy - 2, hx + 28, hy + 12], fill=C_WHITE)
-        d.ellipse([hx + 14, hy, hx + 24, hy + 10], fill=(70, 95, 140, 255)) # Iris
-        d.ellipse([hx + 17, hy + 3, hx + 21, hy + 7], fill=C_BLACK)
-        d.ellipse([hx + 15, hy + 2, hx + 18, hy + 5], fill=C_WHITE) # Catchlight
-        d.line([(hx + 8, hy - 8), (hx + 30, hy - 4)], fill=C_BEARD, width=5) # Bushy eyebrow
+    # Eyes
+    for side in [-1, 1]:
+        ex = hx + side * 15
+        ey = hy + 5
+        if eye_blink:
+            d.line([(ex - 7, ey), (ex + 7, ey)], fill=C_BLACK, width=2)
+        else:
+            d.ellipse([ex - 7, ey - 4, ex + 7, ey + 4], fill=C_WHITE)
+            d.ellipse([ex - 3, ey - 3, ex + 3, ey + 3], fill=(85, 125, 175, 255)) # Blue eyes
+            d.ellipse([ex - 1, ey - 1, ex + 1, ey + 1], fill=C_BLACK)
+            # Squint contour
+            d.line([(ex - 8, ey - 4), (ex + 8, ey - 4)], fill=C_SKIN_SHADOW, width=2)
+            # Blonde eyebrows
+            d.arc([ex - 9, ey - 14, ex + 9, ey - 6], start=190, end=350, fill=C_HAIR_DARK, width=4)
 
     # Nose
-    d.polygon([(hx, hy + 8), (hx - 6, hy + 20), (hx + 6, hy + 20)], fill=C_SKIN_SHADOW)
+    d.polygon([(hx, hy + 10), (hx - 4, hy + 24), (hx + 4, hy + 24)], fill=C_SKIN_SHADOW)
 
-    # Curled Mustache
-    d.polygon([(hx, hy + 24), (hx - 36, hy + 28), (hx - 42, hy + 18), (hx - 20, hy + 22)], fill=C_BEARD)
-    d.polygon([(hx, hy + 24), (hx + 36, hy + 28), (hx + 42, hy + 18), (hx + 20, hy + 22)], fill=C_BEARD)
-
-    # Beard
-    d.polygon([
-        (hx - 35, hy + 25), (hx - 30, hy + 75),
-        (hx, hy + 96),
-        (hx + 30, hy + 75), (hx + 35, hy + 25)
-    ], fill=C_BEARD)
-    d.line([(hx - 15, hy + 42), (hx - 10, hy + 78)], fill=C_BEARD_LIGHT, width=3)
-    d.line([(hx + 15, hy + 42), (hx + 10, hy + 78)], fill=C_BEARD_LIGHT, width=3)
+    # Mouth
+    if mouth == "speech":
+        d.rounded_rectangle([hx - 8, hy + 30, hx + 8, hy + 38], radius=4, fill=(195, 75, 80, 255))
+        d.line([(hx - 6, hy + 33), (hx + 6, hy + 33)], fill=C_WHITE, width=2)
+    elif mouth == "smile":
+        d.arc([hx - 10, hy + 24, hx + 10, hy + 40], start=20, end=160, fill=(185, 60, 68, 255), width=3)
+    elif mouth == "kiss":
+        d.rounded_rectangle([hx - 6, hy + 30, hx + 6, hy + 38], radius=4, fill=(215, 60, 75, 255))
 
     # =========================================================================
-    # 4. TRICORN HAT WITH GOLD TRIM & PLUME
+    # 4. SIGNATURE HAIR (Golden-blonde swept-back volume)
     # =========================================================================
-    t = hat_tilt
+    hb = hair_blow * 2
+    d.rounded_rectangle([hx - 42, hy - 45, hx + 42, hy - 8], radius=16, fill=C_HAIR)
     d.polygon([
-        (hx - 80 + t, hy - 15),
-        (hx - 95 + t, hy - 45),
-        (hx - 60 + t, hy - 75),
-        (hx + t, hy - 95),
-        (hx + 60 + t, hy - 75),
-        (hx + 95 + t, hy - 45),
-        (hx + 80 + t, hy - 15),
-        (hx + t, hy - 25)
-    ], fill=C_HAT)
-    d.line([
-        (hx - 92 + t, hy - 43), (hx - 58 + t, hy - 73),
-        (hx + t, hy - 93),
-        (hx + 58 + t, hy - 73), (hx + 92 + t, hy - 43)
-    ], fill=C_HAT_GOLD, width=5)
-
-    # Crimson feather plume
-    d.polygon([
-        (hx - 30 + t, hy - 70), (hx - 70 + t, hy - 130),
-        (hx - 100 + t, hy - 110), (hx - 55 + t, hy - 65)
-    ], fill=C_FEATHER)
-
-    # Skull brooch
-    d.ellipse([hx - 8 + t, hy - 45, hx + 8 + t, hy - 32], fill=(245, 245, 245, 255))
-    d.ellipse([hx - 4 + t, hy - 41, hx - 1 + t, hy - 37], fill=C_BLACK)
-    d.ellipse([hx + 1 + t, hy - 41, hx + 4 + t, hy - 37], fill=C_BLACK)
+        (hx - 42, hy - 30), (hx - 50 + hb, hy - 40),
+        (hx - 30 + hb, hy - 55), (hx + 10 + hb, hy - 58),
+        (hx + 45 + hb, hy - 42), (hx + 42, hy - 15),
+        (hx + 30, hy - 25), (hx - 10, hy - 35)
+    ], fill=C_HAIR)
+    # Sweeping hair lines & highlights
+    d.arc([hx - 45 + hb, hy - 52, hx + 45 + hb, hy - 10], start=180, end=350, fill=C_HAIR_LIGHT, width=6)
+    d.line([(hx - 35 + hb, hy - 38), (hx + 35 + hb, hy - 45)], fill=C_HAIR_LIGHT, width=4)
+    d.line([(hx - 25 + hb, hy - 28), (hx + 38 + hb, hy - 32)], fill=C_HAIR_LIGHT, width=3)
+    d.line([(hx - 40, hy - 20), (hx - 36, hy + 5)], fill=C_HAIR_DARK, width=4) # Sideburn left
+    d.line([(hx + 40, hy - 20), (hx + 36, hy + 5)], fill=C_HAIR_DARK, width=4) # Sideburn right
 
 
 # =========================================================================
@@ -203,51 +246,57 @@ def draw_pirate_captain(d: ImageDraw.ImageDraw, cx=256, cy=245,
 # =========================================================================
 
 def gen_idle():
+    """Standing confident, pointing finger forward (from photo) / thumbs up!"""
     frames = []
     bobs = [0, -2, 0, 2]
     for i, bob in enumerate(bobs):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256, cy=245 + bob, eye_blink=(i == 2))
+        draw_trump(d, cx=256, cy=245 + bob,
+                   arm_pose="point" if i % 2 == 0 else "walk",
+                   eye_blink=(i == 2),
+                   mouth="speech" if i == 0 else "smile")
         frames.append(finalize_frame(im))
     return frames
 
 
 def gen_walk():
+    """Iconic White House lawn swagger stride from photo!"""
     frames = []
     walk_data = [
-        (0,  3,  0, -3, -1),
-        (-2, 1, -1, -1,  0),
-        (-4,-2,  0,  2, -1),
-        (0, -3, -1,  3,  0),
-        (-2,-1,  0,  1, -1),
-        (-4, 2, -1, -2,  0),
+        (0,   4,  0,  -4, -1,  2),
+        (-2,  2, -1,  -2,  0,  0),
+        (-4, -2,  0,   2, -1, -2),
+        (0,  -4, -1,   4,  0, -2),
+        (-2, -2,  0,   2, -1,  0),
+        (-4,  2, -1,  -2,  0,  2),
     ]
-    for i, (bob, ldx, ldy, rdx, rdy) in enumerate(walk_data):
+    for i, (bob, ldx, ldy, rdx, rdy, t_swing) in enumerate(walk_data):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256, cy=245 + bob,
-                            leg_l_off=(ldx, ldy), leg_r_off=(rdx, rdy),
-                            hat_tilt=(-2 if i % 2 == 0 else 2))
+        draw_trump(d, cx=256, cy=245 + bob,
+                   leg_l_off=(ldx, ldy), leg_r_off=(rdx, rdy),
+                   arm_pose="point" if i == 0 else "walk",
+                   tie_swing=t_swing)
         frames.append(finalize_frame(im))
     return frames
 
 
 def gen_run():
+    """Brisk jog chasing the girl!"""
     frames = []
     run_data = [
-        (-4,  6, -3, -6, -4),
-        (2,   3,  0, -3, -1),
-        (-4, -6, -4,  6, -3),
-        (2,  -3, -1,  3,  0),
+        (-4,  6, -3, -6, -4,  4),
+        (2,   3,  0, -3, -1,  0),
+        (-4, -6, -4,  6, -3, -4),
+        (2,  -3, -1,  3,  0,  0),
     ]
-    for i, (bob, ldx, ldy, rdx, rdy) in enumerate(run_data):
+    for i, (bob, ldx, ldy, rdx, rdy, t_swing) in enumerate(run_data):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256, cy=245 + bob,
-                            leg_l_off=(ldx, ldy), leg_r_off=(rdx, rdy),
-                            arm_pose="cutlass_swing" if i % 2 == 0 else "down",
-                            hat_tilt=-4)
+        draw_trump(d, cx=256, cy=245 + bob,
+                   leg_l_off=(ldx, ldy), leg_r_off=(rdx, rdy),
+                   arm_pose="walk", tie_swing=t_swing, hair_blow=-3)
         frames.append(finalize_frame(im))
     return frames
 
@@ -256,12 +305,12 @@ def gen_jump():
     frames = []
     im0 = create_canvas()
     d0 = ImageDraw.Draw(im0)
-    draw_pirate_captain(d0, cx=256, cy=220, leg_l_off=(-3, -5), leg_r_off=(3, -5), arm_pose="up", hat_tilt=-3)
+    draw_trump(d0, cx=256, cy=220, leg_l_off=(-3, -5), leg_r_off=(3, -5), arm_pose="fist_pump", tie_swing=-4)
     frames.append(finalize_frame(im0))
 
     im1 = create_canvas()
     d1 = ImageDraw.Draw(im1)
-    draw_pirate_captain(d1, cx=256, cy=200, leg_l_off=(-4, -8), leg_r_off=(4, -8), arm_pose="up", hat_tilt=-5)
+    draw_trump(d1, cx=256, cy=200, leg_l_off=(-4, -8), leg_r_off=(4, -8), arm_pose="fist_pump", tie_swing=4)
     frames.append(finalize_frame(im1))
     return frames
 
@@ -271,7 +320,7 @@ def gen_fall():
     for i in range(2):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256, cy=235, leg_l_off=(-4, -2), leg_r_off=(4, -2), arm_pose="up", hat_tilt=3)
+        draw_trump(d, cx=256, cy=235, leg_l_off=(-4, -2), leg_r_off=(4, -2), arm_pose="dragged", tie_swing=6)
         frames.append(finalize_frame(im))
     return frames
 
@@ -280,69 +329,74 @@ def gen_land():
     frames = []
     im0 = create_canvas()
     d0 = ImageDraw.Draw(im0)
-    draw_pirate_captain(d0, cx=256, cy=260, leg_l_off=(-3, 2), leg_r_off=(3, 2), arm_pose="down")
+    draw_trump(d0, cx=256, cy=260, leg_l_off=(-3, 2), leg_r_off=(3, 2), arm_pose="walk", mouth="smile")
     frames.append(finalize_frame(im0))
 
     im1 = create_canvas()
     d1 = ImageDraw.Draw(im1)
-    draw_pirate_captain(d1, cx=256, cy=245, arm_pose="down")
+    draw_trump(d1, cx=256, cy=245, arm_pose="point", mouth="speech")
     frames.append(finalize_frame(im1))
     return frames
 
 
 def gen_climb():
+    """Climbing screen borders/windows ('We will build a wall!')"""
     frames = []
     for i in range(4):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256, cy=245 + (2 if i % 2 == 0 else -2),
-                            leg_l_off=(-2, -3 if i % 2 == 0 else 3),
-                            leg_r_off=(3, 3 if i % 2 == 0 else -3),
-                            arm_pose="up")
+        draw_trump(d, cx=256, cy=245 + (2 if i % 2 == 0 else -2),
+                   leg_l_off=(-2, -3 if i % 2 == 0 else 3),
+                   leg_r_off=(3, 3 if i % 2 == 0 else -3),
+                   arm_pose="up")
         frames.append(finalize_frame(im))
     return frames
 
 
 def gen_dragged():
+    """Dragged by user ('Excuse me! Total fake news!')"""
     frames = []
     for i in range(4):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256, cy=245,
-                            leg_l_off=(-3 if i % 2 == 0 else 3, -3),
-                            leg_r_off=(3 if i % 2 == 0 else -3, 2),
-                            arm_pose="up", hat_tilt=5)
+        draw_trump(d, cx=256, cy=245,
+                   leg_l_off=(-3 if i % 2 == 0 else 3, -3),
+                   leg_r_off=(3 if i % 2 == 0 else -3, 2),
+                   arm_pose="dragged", hair_blow=4, mouth="speech")
         frames.append(finalize_frame(im))
     return frames
 
 
 def gen_attack():
+    """The iconic Pointing Finger ('You're fired! 🫵')"""
     frames = []
     for i in range(4):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256 + (i * 4), cy=245, arm_pose="cutlass_swing")
+        draw_trump(d, cx=256 + (i * 3), cy=245, arm_pose="point", mouth="speech")
         frames.append(finalize_frame(im))
     return frames
 
 
 def gen_celebrate():
+    """Double fist pump rally dance!"""
     frames = []
     for i in range(4):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256, cy=245 - (i * 2), arm_pose="up", hat_tilt=(-4 if i % 2 == 0 else 4))
+        draw_trump(d, cx=256, cy=245 - (i * 3), arm_pose="fist_pump", mouth="smile")
         frames.append(finalize_frame(im))
     return frames
 
 
 def gen_sleep():
+    """Resting peacefully ('Big rally tomorrow...')"""
     frames = []
     for i in range(3):
         im = create_canvas()
         d = ImageDraw.Draw(im)
-        draw_pirate_captain(d, cx=256, cy=265, eye_blink=True, hat_tilt=8)
-        d.text((290, 80 - i * 10), "Z", fill=C_HAT_GOLD)
+        draw_trump(d, cx=256, cy=265, arm_pose="walk", eye_blink=True, mouth="smile")
+        d.text((290, 80 - i * 10), "Z", fill=(246, 210, 88, 255))
         frames.append(finalize_frame(im))
     return frames
 
@@ -373,7 +427,7 @@ def generate_all_sprites(output_dir="assets/sprites"):
             p_l = os.path.join(output_dir, f"{anim_name}_left_{idx}.png")
             frame_l.save(p_l)
 
-    print(f"HD Pirate Captain sprites generated successfully in {output_dir}!")
+    print(f"Donald Trump HD sprites generated successfully in {output_dir}!")
 
 
 if __name__ == "__main__":

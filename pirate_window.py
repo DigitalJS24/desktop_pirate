@@ -607,7 +607,7 @@ class PirateWindow(QWidget):
     def _handle_click_reaction(self):
         if self.state == PirateState.SLEEP:
             self.change_state(PirateState.IDLE, duration=2.0)
-            self.say("Хто будить капітана?! До бою!")
+            self.say("Excuse me?! Хто будить президента?!")
             return
 
         actions = [PirateState.ATTACK, PirateState.JUMP, PirateState.CELEBRATE]
@@ -658,10 +658,10 @@ class PirateWindow(QWidget):
         """)
 
         # Actions
-        act_attack = menu.addAction("⚔️  На абордаж! (Атака)")
+        act_attack = menu.addAction("🫵  Ви звільнені! (You're fired!)")
         act_jump_icon = menu.addAction("🎯  Стрибнути на ярлик")
         act_romance = menu.addAction("💖  Почати романтичну погоню")
-        act_kiss_now = menu.addAction("💋  Поцілувати піратку зараз")
+        act_kiss_now = menu.addAction("💋  Поцілуватися зараз")
         act_spawn_kid = menu.addAction("🍌  Покликати міньйона (BANANA!)")
 
         # Parrot menu actions
@@ -670,14 +670,14 @@ class PirateWindow(QWidget):
         else:
             act_parrot_call = menu.addAction("🦜  Відпустити папугу політати")
 
-        act_treasure = menu.addAction("💰  Пошукати скарб")
+        act_treasure = menu.addAction("💰  Пошукати капітал")
         sleep_text = "⏰  Розбудити" if self.state == PirateState.SLEEP else "💤  Подрімати (Сон)"
         act_sleep = menu.addAction(sleep_text)
 
         menu.addSeparator()
 
         # Scale submenu
-        scale_menu = menu.addMenu("📏  Розмір пірата")
+        scale_menu = menu.addMenu("📏  Розмір персонажа")
         act_scale_15 = scale_menu.addAction("Маленький (1.5x)")
         act_scale_22 = scale_menu.addAction("Звичайний (2.2x - Рекомендовано)")
         act_scale_28 = scale_menu.addAction("Великий (2.8x)")
@@ -689,14 +689,14 @@ class PirateWindow(QWidget):
 
         menu.addSeparator()
 
-        act_home = menu.addAction("⚓  Повернути на панель завдань")
-        act_exit = menu.addAction("🚪  Відплисти (Вийти)")
+        act_home = menu.addAction("🇺🇸  Повернути на панель завдань")
+        act_exit = menu.addAction("🚪  Вийти")
 
         action = menu.exec(global_pos)
 
         if action == act_attack:
             self.change_state(PirateState.ATTACK, duration=1.0)
-            self.say("На абордаж! Захопити монітор!")
+            self.say("You're fired! 🫵")
         elif action == act_romance:
             if self.piratess:
                 self.piratess.start_chase()
@@ -746,7 +746,7 @@ class PirateWindow(QWidget):
         elif action == act_home:
             self.init_position()
             self.change_state(PirateState.IDLE)
-            self.say("Я знову на капітанському містку!")
+            self.say("Make Desktop Great Again! 🇺🇸")
         elif action == act_exit:
             self.close()
             if self.parrot:

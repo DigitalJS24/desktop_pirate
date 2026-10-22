@@ -46,8 +46,8 @@ def create_tray_icon(app: QApplication, pirate: PirateWindow, piratess: Piratess
         }
     """)
 
-    act_say = tray_menu.addAction("🏴‍☠️  Покликати капітана")
-    act_say.triggered.connect(lambda: pirate.say("Я тут, салаги! Робота кипить!"))
+    act_say = tray_menu.addAction("🇺🇸  Покликати Дональда")
+    act_say.triggered.connect(lambda: pirate.say("Make Desktop Great Again! 🇺🇸"))
 
     act_chase = tray_menu.addAction("💖  Почати романтичну погоню")
     act_chase.triggered.connect(lambda: piratess.start_chase())
@@ -83,7 +83,7 @@ def create_tray_icon(app: QApplication, pirate: PirateWindow, piratess: Piratess
     act_exit.triggered.connect(app.quit)
 
     tray_icon.setContextMenu(tray_menu)
-    tray_icon.setToolTip("Десктопний Пірат, Піратка та Папуга")
+    tray_icon.setToolTip("Десктопний Трамп, Дівчина та Папуга")
     tray_icon.show()
     return tray_icon
 
